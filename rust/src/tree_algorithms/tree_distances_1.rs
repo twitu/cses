@@ -1,8 +1,8 @@
-use std::{cmp::max, fs::File, io::*};
+use std::{cmp::max, io::*};
 use std::{collections::HashMap, usize};
 
 struct Graph {
-    n: usize,
+    _n: usize,
     edges: Vec<Vec<usize>>,
 }
 
@@ -13,7 +13,7 @@ impl Graph {
             edges.push(Vec::new())
         }
 
-        Graph { n, edges }
+        Graph { _n: n, edges }
     }
 
     fn add_edge(&mut self, a: usize, b: usize) {
@@ -46,9 +46,10 @@ impl Graph {
         let mut max_heights: Vec<(usize, usize)> = self.edges[v]
             .iter()
             .filter(|&&child| child != parent)
-            .map(|&child| (child, meta_data[child].max_height + 1))
+            .map(|&child| (meta_data[child].max_height + 1, child))
             .collect();
         max_heights.sort();
+        max_heights.reverse();
 
         // populate relaxed child link metadata entries
         for &relax_child in self.edges[v].iter() {
@@ -59,7 +60,7 @@ impl Graph {
 
             // get max height from the max_heights vector after skipping current relaxed child
             let mut max_height = 0;
-            if let Some((max_value, _)) = max_heights.iter().find(|(i, _)| *i != relax_child) {
+            if let Some((max_value, _)) = max_heights.iter().find(|(_, i)| *i != relax_child) {
                 max_height = *max_value;
             }
 
