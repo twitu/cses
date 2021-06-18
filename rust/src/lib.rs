@@ -13,3 +13,4 @@ mod sum_of_three_values;
 mod traffic_lights;
 mod tree_algorithms;
 mod sum_of_four_values;
+mod two_knights;
