@@ -33,8 +33,18 @@ fn main() {
         }
 
         if let Some(pair_index) = pair_sum.get(&(target - value)) {
-            if indexes.0 != pair_index.0 && indexes.0 != pair_index.1  && indexes.1 != pair_index.0 && indexes.1 != pair_index.1 {
-                println!("{} {} {} {}", indexes.0 + 1, indexes.1 + 1, pair_index.0 + 1, pair_index.1 + 1);
+            if indexes.0 != pair_index.0
+                && indexes.0 != pair_index.1
+                && indexes.1 != pair_index.0
+                && indexes.1 != pair_index.1
+            {
+                println!(
+                    "{} {} {} {}",
+                    indexes.0 + 1,
+                    indexes.1 + 1,
+                    pair_index.0 + 1,
+                    pair_index.1 + 1
+                );
                 solution = true;
                 break;
             }

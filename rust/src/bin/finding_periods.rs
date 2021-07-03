@@ -11,7 +11,6 @@ fn z_function(text: &[u8]) -> Vec<usize> {
     let mut r: usize = 0;
 
     for i in 1..total_length {
-        
         // add previous match segment portion to current i
         // truncate so that match does not exist right most boundary
         if i <= r {

@@ -93,11 +93,11 @@ impl BinarySearchTree for Node {
                 Ordering::Less => {
                     <Node as BinarySearchTree>::delete(&mut inner.left, value);
                     tree.insert(inner);
-                },
+                }
                 Ordering::Greater => {
                     <Node as BinarySearchTree>::delete(&mut inner.right, value);
                     tree.insert(inner);
-                },
+                }
                 Ordering::Equal => {
                     // is leaf node
                     match (inner.left, inner.right) {

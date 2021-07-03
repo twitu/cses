@@ -1,4 +1,7 @@
-use std::{io::{stdin, Read}, usize};
+use std::{
+    io::{stdin, Read},
+    usize,
+};
 
 fn attack_positions(n: usize) -> usize {
     match n {
@@ -17,7 +20,7 @@ fn total_positions(n: usize) -> usize {
 
     match n {
         0 => 0,
-        _ => all_tiles * (all_tiles - 1) / 2,  // choose 2 out of n tiles
+        _ => all_tiles * (all_tiles - 1) / 2, // choose 2 out of n tiles
     }
 }
 
