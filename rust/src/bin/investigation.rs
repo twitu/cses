@@ -171,14 +171,8 @@ fn djikstra(
         let current_city = current_visit.city;
         let next_number_of_hops = current_visit.number_of_hops + 1;
 
-        // djikstra sets the optimal travel cost for a city the first
-        // time it is visited. Any other costlier visit can be ignored
-        if current_visit.travel_cost > result_set[current_city].cost {
-            continue;
-        }
-
         for connection in flight_network.edges[current_visit.city].iter() {
-            let next_city_cost = result_set[current_city].cost + connection.cost;
+            let next_city_cost = current_visit.travel_cost + connection.cost;
 
             // next city visit can be updated
             match result_set[connection.end].cost.cmp(&next_city_cost) {
