@@ -1,0 +1,23 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "cabal run",
+			"type": "shell",
+			"command": "~/.ghcup/bin/cabal", // note: path to the cabal
+			"args": [
+				"run",
+				"exe:${fileBasenameNoExtension}",
+				"<",
+				"./input/${fileBasenameNoExtension}.txt"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

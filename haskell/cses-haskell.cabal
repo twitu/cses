@@ -1,0 +1,17 @@
+cabal-version:      2.4
+name:               cses-haskell
+version:            0.1.0.0
+build-type:         Simple
+
+common common-options
+  build-depends:    base
+                    , containers
+                    , bytestring
+  hs-source-dirs:   src
+  ghc-options:      -O2 -Wall -main-is Main
+
+-- multi executable cabal project configuration
+-- reference - https://stackoverflow.com/a/14241228
+executable DistinctNumbers
+  import:           common-options
+  main-is:          DistinctNumbers.hs
