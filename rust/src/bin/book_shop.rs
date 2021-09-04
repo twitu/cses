@@ -1,44 +1,65 @@
 use std::{cmp::max, io::*};
 
+// book shop - https://cses.fi/problemset/task/1158
 fn main() {
     let mut input = String::new();
     stdin().read_to_string(&mut input).unwrap();
     let mut input = input.lines();
-    let first_line = input.next().unwrap();
-    let second_line = input.next().unwrap();
-    let third_line = input.next().unwrap();
 
-    let first_inputs: Vec<&str> = first_line.split(' ').collect();
-    let n_books: usize = first_inputs[0].parse().unwrap();
-    let total_price: usize = first_inputs[1].parse().unwrap();
+    let first_line: Vec<usize> = input
+        .next()
+        .unwrap()
+        .split(' ')
+        .map(|val| val.parse::<usize>().unwrap())
+        .collect();
+    let n_books: usize = first_line[0];
+    let total_price: usize = first_line[1];
 
-    let price: Vec<usize> = second_line
+    let price: Vec<usize> = input
+        .next()
+        .unwrap()
         .split(' ')
         .map(|char| char.parse().unwrap())
         .collect();
 
-    let pages: Vec<usize> = third_line
+    let pages: Vec<usize> = input
+        .next()
+        .unwrap()
         .split(' ')
         .map(|char| char.parse().unwrap())
         .collect();
 
-    let mut table = vec![vec![0 as usize; total_price + 1]; n_books + 1];
+    // table[k_book % 2][price] represents the total number of
+    // pages that can be gotten when considering k_books and
+    // limit of price. The algorithm only requires previous book
+    // results to so the table can be constructed with two rows
+    let mut table = vec![vec![0 as usize; total_price + 1]; 2];
 
-    for i in 1..=n_books {
-        for j in 0..=total_price {
-            // base case array with 1 element
-            let book_index = i - 1;
+    for book in 1..=n_books {
+        for cur_price in 1..=total_price {
+            // page and price vectors are 0 indexed
+            let book_pages = pages[book - 1];
+            let book_price = price[book - 1];
+            let book_index = book % 2;
 
-            if (j as i64) - (price[book_index] as i64) < 0 {
+            // table is 1 indexed
+            let prev_book = book - 1;
+            let prev_book_index = prev_book % 2;
+
+            // use previous book results if current cannot be used
+            if book_price > cur_price {
+                table[book_index][cur_price] = table[prev_book_index][cur_price];
                 continue;
             }
 
-            table[i][j] = max(
-                table[i - 1][j],
-                pages[book_index] + table[i - 1][j - price[book_index]],
+            // choose between using current book and not using it
+            table[book_index][cur_price] = max(
+                table[prev_book_index][cur_price],
+                book_pages + table[prev_book_index][cur_price - book_price],
             )
         }
     }
 
-    println!("{}", table[n_books][total_price])
+    let n_books_index = n_books % 2;
+    println!("{}", table[n_books_index][total_price])
 }
