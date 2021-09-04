@@ -1,4 +1,7 @@
-use std::{cmp::min, io::{stdin, Read}};
+use std::{
+    cmp::min,
+    io::{stdin, Read},
+};
 
 const UPPER_BOUND: usize = 500;
 
@@ -23,7 +26,6 @@ fn main() {
 
     for row in 1..=row_len {
         for col in 1..=col_len {
-
             // a square requires no cuts
             if row == col {
                 dp_array[row][col] = 0;
@@ -45,9 +47,7 @@ fn main() {
             // consider possible vertical cuts
             let vert_cut_min = (1..col)
                 .into_iter()
-                .map(|iter_col| {
-                    dp_array[row][iter_col] + dp_array[row][col - iter_col] + 1
-                })
+                .map(|iter_col| dp_array[row][iter_col] + dp_array[row][col - iter_col] + 1)
                 .min()
                 .unwrap();
 
