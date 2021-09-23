@@ -47,7 +47,7 @@ impl SegmentTree {
         // for this tree the parent contains the
         // the sum of left and right children
         for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
-            self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+            self.tree[SegmentTree::parent(i)] = self.tree[i] ^ self.tree[i + 1];
         }
     }
 
@@ -81,7 +81,7 @@ impl SegmentTree {
 
             // segment range contains query range
             return inner(tree, left, right, level + 1, segment * 2)
-                + inner(tree, left, right, level + 1, segment * 2 + 1);
+                ^ inner(tree, left, right, level + 1, segment * 2 + 1);
         }
 
         return inner(self, left, right, 0, 0);

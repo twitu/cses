@@ -1,4 +1,7 @@
-use std::io::{stdin, Read};
+use std::{
+    cmp::min,
+    io::{stdin, Read},
+};
 
 struct SegmentTree {
     levels: usize,
@@ -47,7 +50,7 @@ impl SegmentTree {
         // for this tree the parent contains the
         // the sum of left and right children
         for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
-            self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+            self.tree[SegmentTree::parent(i)] = min(self.tree[i], self.tree[i + 1]);
         }
     }
 
@@ -66,12 +69,12 @@ impl SegmentTree {
 
             // query range is to the left of segment range
             if current_segment_range_right < left {
-                return 0;
+                return usize::MAX;
             }
 
             // query range is to the right of segment range
             if right < current_segment_range_left {
-                return 0;
+                return usize::MAX;
             }
 
             // query range contains segment range
@@ -80,8 +83,10 @@ impl SegmentTree {
             }
 
             // segment range contains query range
-            return inner(tree, left, right, level + 1, segment * 2)
-                + inner(tree, left, right, level + 1, segment * 2 + 1);
+            min(
+                inner(tree, left, right, level + 1, segment * 2),
+                inner(tree, left, right, level + 1, segment * 2 + 1),
+            )
         }
 
         return inner(self, left, right, 0, 0);

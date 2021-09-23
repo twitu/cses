@@ -1,4 +1,7 @@
-use std::io::{stdin, Read};
+use std::{
+    cmp::min,
+    io::{stdin, Read},
+};
 
 struct SegmentTree {
     levels: usize,
@@ -9,6 +12,16 @@ struct SegmentTree {
 impl SegmentTree {
     fn parent(i: usize) -> usize {
         (i - 1) / 2
+    }
+
+    // 0 indexed
+    fn left(i: usize) -> usize {
+        i * 2 + 1
+    }
+
+    // 0 indexed
+    fn right(i: usize) -> usize {
+        i * 2 + 2
     }
 
     // gives index for flattened tree element
@@ -25,7 +38,7 @@ impl SegmentTree {
     fn new(values: Vec<usize>) -> Self {
         let levels: usize = f64::ceil(f64::log2(values.len() as f64)).round() as usize + 1;
         let base_index = (2 as usize).pow((levels - 1) as u32) - 1;
-        let tree = vec![0; (2 as usize).pow(levels as u32) - 1];
+        let tree = vec![usize::MAX; (2 as usize).pow(levels as u32) - 1];
 
         let mut segment_tree = SegmentTree {
             levels,
@@ -47,7 +60,25 @@ impl SegmentTree {
         // for this tree the parent contains the
         // the sum of left and right children
         for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
-            self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+            self.tree[SegmentTree::parent(i)] = min(self.tree[i], self.tree[i + 1]);
+        }
+    }
+
+    fn update_value(&mut self, index: usize, value: usize) {
+        let mut tree_index = self.base_index + index;
+        self.tree[tree_index] = value;
+
+        let mut levels = self.levels - 1;
+
+        while levels != 0 {
+            let parent = SegmentTree::parent(tree_index);
+            let left_child = SegmentTree::left(parent);
+            let right_child = SegmentTree::right(parent);
+
+            self.tree[parent] = min(self.tree[left_child], self.tree[right_child]);
+
+            tree_index = parent;
+            levels -= 1;
         }
     }
 
@@ -66,12 +97,12 @@ impl SegmentTree {
 
             // query range is to the left of segment range
             if current_segment_range_right < left {
-                return 0;
+                return usize::MAX;
             }
 
             // query range is to the right of segment range
             if right < current_segment_range_left {
-                return 0;
+                return usize::MAX;
             }
 
             // query range contains segment range
@@ -80,8 +111,10 @@ impl SegmentTree {
             }
 
             // segment range contains query range
-            return inner(tree, left, right, level + 1, segment * 2)
-                + inner(tree, left, right, level + 1, segment * 2 + 1);
+            return min(
+                inner(tree, left, right, level + 1, segment * 2),
+                inner(tree, left, right, level + 1, segment * 2 + 1),
+            );
         }
 
         return inner(self, left, right, 0, 0);
@@ -109,7 +142,7 @@ fn main() {
         .map(|value| value.parse().unwrap())
         .collect();
 
-    let tree = SegmentTree::new(numbers);
+    let mut tree = SegmentTree::new(numbers);
 
     for _ in 0..q_queries {
         let query: Vec<usize> = input
@@ -119,6 +152,17 @@ fn main() {
             .map(|val| val.parse().unwrap())
             .collect();
 
-        println!("{}", tree.find_for_range(query[0] - 1, query[1] - 1));
+        match query[0] {
+            // update query
+            1 => {
+                // 0 indexed
+                tree.update_value(query[1] - 1, query[2]);
+            }
+            // only other query is range query
+            _ => {
+                // 0 indexed
+                println!("{}", tree.find_for_range(query[1] - 1, query[2] - 1));
+            }
+        }
     }
 }

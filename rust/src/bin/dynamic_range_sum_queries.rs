@@ -11,6 +11,16 @@ impl SegmentTree {
         (i - 1) / 2
     }
 
+    // 0 indexed
+    fn left(i: usize) -> usize {
+        i * 2 + 1
+    }
+
+    // 0 indexed
+    fn right(i: usize) -> usize {
+        i * 2 + 2
+    }
+
     // gives index for flattened tree element
     // from 0 indexed level and 0 indexed segment for that level
     fn tree_index(level: usize, segment: usize) -> usize {
@@ -48,6 +58,24 @@ impl SegmentTree {
         // the sum of left and right children
         for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
             self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+        }
+    }
+
+    fn update_value(&mut self, index: usize, value: usize) {
+        let mut tree_index = self.base_index + index;
+        self.tree[tree_index] = value;
+
+        let mut levels = self.levels - 1;
+
+        while levels != 0 {
+            let parent = SegmentTree::parent(tree_index);
+            let left_child = SegmentTree::left(parent);
+            let right_child = SegmentTree::right(parent);
+
+            self.tree[parent] = self.tree[left_child] + self.tree[right_child];
+
+            tree_index = parent;
+            levels -= 1;
         }
     }
 
@@ -109,7 +137,7 @@ fn main() {
         .map(|value| value.parse().unwrap())
         .collect();
 
-    let tree = SegmentTree::new(numbers);
+    let mut tree = SegmentTree::new(numbers);
 
     for _ in 0..q_queries {
         let query: Vec<usize> = input
@@ -119,6 +147,17 @@ fn main() {
             .map(|val| val.parse().unwrap())
             .collect();
 
-        println!("{}", tree.find_for_range(query[0] - 1, query[1] - 1));
+        match query[0] {
+            // update query
+            1 => {
+                // 0 indexed
+                tree.update_value(query[1] - 1, query[2]);
+            }
+            // only other query is range query
+            _ => {
+                // 0 indexed
+                println!("{}", tree.find_for_range(query[1] - 1, query[2] - 1));
+            }
+        }
     }
 }
