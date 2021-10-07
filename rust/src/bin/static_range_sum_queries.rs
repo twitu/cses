@@ -1,93 +1,82 @@
 use std::io::{stdin, Read};
 
 struct SegmentTree {
-    levels: usize,
-    base_index: usize,
+    array_len: usize,
     tree: Vec<usize>,
 }
 
 impl SegmentTree {
-    fn parent(i: usize) -> usize {
-        (i - 1) / 2
+    #[inline]
+    // 1 indexed segment tree
+    fn left(i: usize) -> usize {
+        i * 2
     }
 
-    // gives index for flattened tree element
-    // from 0 indexed level and 0 indexed segment for that level
-    fn tree_index(level: usize, segment: usize) -> usize {
-        let total_segments = (2 as usize).pow(level as u32) - 1;
-        total_segments + segment
-    }
-
-    fn get_value(&self, level: usize, segment: usize) -> usize {
-        self.tree[SegmentTree::tree_index(level, segment)]
+    #[inline]
+    // 1 indexed segment tree
+    fn right(i: usize) -> usize {
+        i * 2 + 1
     }
 
     fn new(values: Vec<usize>) -> Self {
-        let levels: usize = f64::ceil(f64::log2(values.len() as f64)).round() as usize + 1;
-        let base_index = (2 as usize).pow((levels - 1) as u32) - 1;
-        let tree = vec![0; (2 as usize).pow(levels as u32) - 1];
+        let array_len = values.len();
+        let tree_len = array_len * 2;
+        let mut tree = vec![0; tree_len];
 
-        let mut segment_tree = SegmentTree {
-            levels,
-            base_index,
-            tree,
-        };
+        tree[array_len..].copy_from_slice(&values);
 
-        segment_tree.treeify(values);
+        let mut segment_tree = SegmentTree { array_len, tree };
+
+        segment_tree.treeify();
         segment_tree
     }
 
-    fn treeify(&mut self, values: Vec<usize>) {
-        // copy values from original array
-        for (i, &value) in (self.base_index..(self.base_index * 2 + 1)).zip(values.iter()) {
-            self.tree[i] = value;
-        }
-
-        // populate all other levels
-        // for this tree the parent contains the
-        // the sum of left and right children
-        for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
-            self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+    fn treeify(&mut self) {
+        for i in (1..self.array_len).into_iter().rev() {
+            self.tree[i] = self.tree[SegmentTree::left(i)] + self.tree[SegmentTree::right(i)];
         }
     }
 
-    fn find_for_range(&self, left: usize, right: usize) -> usize {
-        fn inner(
-            tree: &SegmentTree,
-            left: usize,
-            right: usize,
-            level: usize,
-            segment: usize,
-        ) -> usize {
-            let current_segment_size = (2 as usize).pow((tree.levels - level - 1) as u32);
+    // query for range [l,r) i.e. left inclusive, right exclusive
+    // 1 indexed query
+    fn find_for_range(&self, query_left: usize, query_right: usize) -> usize {
+        let mut value = 0;
+        let mut l = query_left + self.array_len;
+        let mut r = query_right + self.array_len;
 
-            let current_segment_range_left = segment * current_segment_size;
-            let current_segment_range_right = (segment + 1) * current_segment_size - 1;
-
-            // query range is to the left of segment range
-            if current_segment_range_right < left {
-                return 0;
+        // the algorithm works by only adding values
+        // that are add odd indices of the 1 indexed
+        // segment tree array
+        while l < r {
+            // if l is odd then it is the right child
+            // of it's parent so it can be added as is
+            // incrementing l brings it to the next pair
+            // dividing by 2 makes it the parent of the
+            // next pair
+            // if l is even then it is the left child
+            // of the pair and the sum of the pair can
+            // be found at the parent unless the interval
+            // is closed by the right border
+            if l % 2 != 0 {
+                value += self.tree[l];
             }
 
-            // query range is to the right of segment range
-            if right < current_segment_range_left {
-                return 0;
+            if r % 2 != 0 {
+                r -= 1;
+                value += self.tree[r];
             }
 
-            // query range contains segment range
-            if left <= current_segment_range_left && current_segment_range_right <= right {
-                return tree.get_value(level, segment);
-            }
-
-            // segment range contains query range
-            return inner(tree, left, right, level + 1, segment * 2)
-                + inner(tree, left, right, level + 1, segment * 2 + 1);
+            l += 1;
+            l /= 2;
+            r /= 2;
         }
 
-        return inner(self, left, right, 0, 0);
+        value
     }
 }
 
+// problem - https://cses.fi/problemset/task/1646
+// ref - https://codeforces.com/blog/entry/18051
 fn main() {
     let mut input = String::new();
     stdin().read_to_string(&mut input).unwrap();
@@ -105,7 +94,7 @@ fn main() {
     let numbers: Vec<usize> = input
         .next()
         .unwrap()
-        .split(' ')
+        .split_whitespace()
         .map(|value| value.parse().unwrap())
         .collect();
 
@@ -115,10 +104,10 @@ fn main() {
         let query: Vec<usize> = input
             .next()
             .unwrap()
-            .split(' ')
+            .split_whitespace()
             .map(|val| val.parse().unwrap())
             .collect();
 
-        println!("{}", tree.find_for_range(query[0] - 1, query[1] - 1));
+        println!("{}", tree.find_for_range(query[0] - 1, query[1]));
     }
 }
