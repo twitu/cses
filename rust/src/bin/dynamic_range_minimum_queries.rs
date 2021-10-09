@@ -86,6 +86,7 @@ impl SegmentTree {
             // is closed by the right border
             if l % 2 != 0 {
                 value = min(self.tree[l], value);
+                l += 1;
             }
 
             if r % 2 != 0 {
@@ -93,7 +94,6 @@ impl SegmentTree {
                 value = min(self.tree[r], value);
             }
 
-            l += 1;
             l /= 2;
             r /= 2;
         }
