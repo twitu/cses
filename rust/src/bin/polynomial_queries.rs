@@ -7,6 +7,10 @@ use std::{
 struct SegmentTree {
     levels: usize,
     base_index: usize,
+    /// size of the original array
+    array_size: usize,
+    /// 1 indexed array storing the binary tree
+    /// aggregating information from child nodes in parent node
     tree: Vec<usize>,
     /// calculates the total offset added to a segment from pending updates
     total_offset: Vec<usize>,
@@ -17,31 +21,19 @@ struct SegmentTree {
 
 impl SegmentTree {
     #[inline]
-    fn parent(i: usize) -> usize {
-        (i - 1) / 2
-    }
-
-    #[inline]
     fn left(i: usize) -> usize {
-        i * 2 + 1
+        i * 2
     }
 
     #[inline]
     fn right(i: usize) -> usize {
-        i * 2 + 2
-    }
-
-    // gives index for flattened tree element
-    // from 0 indexed level and 0 indexed segment for that level
-    fn tree_index(level: usize, segment: usize) -> usize {
-        let total_segments = (2 as usize).pow(level as u32) - 1;
-        total_segments + segment
+        i * 2 + 1
     }
 
     fn new(values: Vec<usize>) -> Self {
         let levels: usize = f64::ceil(f64::log2(values.len() as f64)).round() as usize + 1;
-        let base_index = (2 as usize).pow((levels - 1) as u32) - 1;
-        let len = (2 as usize).pow(levels as u32) - 1;
+        let base_index = (2 as usize).pow((levels - 1) as u32);
+        let len = (2 as usize).pow(levels as u32);
         let tree = vec![0; len];
         let total_offset = vec![0; len];
         let pending_updates = vec![0; len];
@@ -49,6 +41,7 @@ impl SegmentTree {
         let mut segment_tree = SegmentTree {
             levels,
             base_index,
+            array_size: values.len(),
             tree,
             total_offset,
             pending_updates,
@@ -60,44 +53,43 @@ impl SegmentTree {
 
     fn treeify(&mut self, values: Vec<usize>) {
         // copy values from original array
-        for (i, &value) in (self.base_index..(self.base_index * 2 + 1)).zip(values.iter()) {
+        for (i, &value) in (self.base_index..(self.base_index * 2)).zip(values.iter()) {
             self.tree[i] = value;
         }
 
         // populate all other levels
         // for this tree the parent contains the
         // the sum of left and right children
-        for i in (1..(self.base_index * 2 + 1)).step_by(2).rev() {
-            self.tree[SegmentTree::parent(i)] = self.tree[i] + self.tree[i + 1];
+        for i in (1..(self.base_index)).rev() {
+            self.tree[i] = self.tree[SegmentTree::left(i)] + self.tree[SegmentTree::right(i)];
         }
     }
 
     // 0 indexed update for original array elements [l, r]
     fn update_range(&mut self, left: usize, right: usize) {
-        fn inner(tree: &mut SegmentTree, left: usize, right: usize, level: usize, segment: usize) {
-            let current_segment_size = (2 as usize).pow((tree.levels - level - 1) as u32);
-
-            let current_segment_range_left = segment * current_segment_size;
-            let current_segment_range_right = (segment + 1) * current_segment_size - 1;
-
+        fn inner(
+            tree: &mut SegmentTree,
+            update_left: usize,
+            update_right: usize,
+            tree_index: usize,
+            seg_left: usize,
+            seg_right: usize,
+        ) {
             // query range is to the left of segment range
-            if current_segment_range_right < left {
-                return;
-            }
-
             // query range is to the right of segment range
-            if right < current_segment_range_left {
+            if seg_right < update_left || update_right < seg_left {
                 return;
             }
 
-            let tree_index = SegmentTree::tree_index(level, segment);
+            let current_segment_size = seg_right - seg_left + 1;
+
             // query range contains segment range
             // add how much offset is being added to the segment sum
             // and increment pending operations
             // the actual update value will be lazily propagated when
             // the range is encountered in a find query
-            if left <= current_segment_range_left && current_segment_range_right <= right {
-                tree.total_offset[tree_index] += current_segment_range_left - left;
+            if update_left <= seg_left && seg_right <= update_right {
+                tree.total_offset[tree_index] += seg_left - update_left;
                 tree.pending_updates[tree_index] += 1;
                 return;
             }
@@ -106,19 +98,32 @@ impl SegmentTree {
             // update parent because we know the total value that
             // will be added to parent node
             {
-                let range_len = min(current_segment_range_right, right)
-                    - max(current_segment_range_left, left)
-                    + 1;
+                let range_len = min(seg_right, update_right) - max(seg_left, update_left) + 1;
                 tree.tree[tree_index] += range_len * (range_len + 1) / 2
-                    + (current_segment_range_left - min(current_segment_range_left, left))
-                        * range_len;
+                    + (seg_left - min(seg_left, update_left)) * range_len;
 
-                inner(tree, left, right, level + 1, segment * 2);
-                inner(tree, left, right, level + 1, segment * 2 + 1);
+                let mid = seg_left + current_segment_size / 2;
+                inner(
+                    tree,
+                    update_left,
+                    update_right,
+                    SegmentTree::left(tree_index),
+                    seg_left,
+                    mid - 1,
+                );
+                inner(
+                    tree,
+                    update_left,
+                    update_right,
+                    SegmentTree::right(tree_index),
+                    mid,
+                    seg_right,
+                );
             }
         }
 
-        inner(self, left, right, 0, 0);
+        let last_level_size = (2 as usize).pow((self.levels - 1) as u32);
+        inner(self, left, right, 1, 0, last_level_size - 1);
     }
 
     // 0 indexed [l, r] range from the original array
@@ -133,66 +138,77 @@ impl SegmentTree {
 
         fn inner(
             tree: &mut SegmentTree,
-            left: usize,
-            right: usize,
-            level: usize,
-            segment: usize,
+            query_left: usize,
+            query_right: usize,
+            tree_index: usize,
+            seg_left: usize,
+            seg_right: usize,
         ) -> usize {
-            let current_segment_size = (2 as usize).pow((tree.levels - level - 1) as u32);
-
-            let current_segment_range_left = segment * current_segment_size;
-            let current_segment_range_right = (segment + 1) * current_segment_size - 1;
-
-            let tree_index = SegmentTree::tree_index(level, segment);
-
             // query range is to the left of segment range
-            if current_segment_range_right < left {
-                return 0;
-            }
-
             // query range is to the right of segment range
-            if right < current_segment_range_left {
+            if seg_right < query_left || query_right < seg_left {
                 return 0;
             }
 
-            // segment range contains query range
-            // or is equal to query range
-            // recursion will continue futher
-            // apply updates to currect node
-            tree.tree[tree_index] += update_value(
+            let current_segment_size = seg_right - seg_left + 1;
+
+            let update_value = update_value(
                 current_segment_size,
                 tree.total_offset[tree_index],
                 tree.pending_updates[tree_index],
             );
 
             // query range contains segment range
-            if left <= current_segment_range_left && current_segment_range_right <= right {
-                return tree.tree[tree_index];
+            // return value along with update
+            // update does not need to be applied as it
+            // will be applied if current nodes child nodes are visited
+            // in later queries
+            if query_left <= seg_left && seg_right <= query_right {
+                return tree.tree[tree_index] + update_value;
             }
+
+            // segment range contains query range
+            // apply updates to currect node
+            tree.tree[tree_index] += update_value;
 
             // segment range contains query range
             {
                 // update left child
                 let left_index = SegmentTree::left(tree_index);
-                tree.total_offset[left_index] += tree.total_offset[tree_index];
                 tree.pending_updates[left_index] += tree.pending_updates[tree_index];
+                tree.total_offset[left_index] += tree.total_offset[tree_index];
 
                 // update right child
                 let right_index = SegmentTree::right(tree_index);
-                tree.total_offset[right_index] += tree.total_offset[tree_index]
-                    + current_segment_size * tree.pending_updates[tree_index];
                 tree.pending_updates[right_index] += tree.pending_updates[tree_index];
+                tree.total_offset[right_index] += tree.total_offset[tree_index]
+                    + (current_segment_size / 2) * tree.pending_updates[tree_index];
 
                 // updates completed
                 tree.total_offset[tree_index] = 0;
                 tree.pending_updates[tree_index] = 0;
 
-                return inner(tree, left, right, level + 1, segment * 2)
-                    + inner(tree, left, right, level + 1, segment * 2 + 1);
+                let mid = seg_left + current_segment_size / 2;
+                return inner(
+                    tree,
+                    query_left,
+                    query_right,
+                    SegmentTree::left(tree_index),
+                    seg_left,
+                    mid - 1,
+                ) + inner(
+                    tree,
+                    query_left,
+                    query_right,
+                    SegmentTree::right(tree_index),
+                    mid,
+                    seg_right,
+                );
             }
         }
 
-        return inner(self, left, right, 0, 0);
+        let last_level_size = (2 as usize).pow((self.levels - 1) as u32);
+        return inner(self, left, right, 1, 0, last_level_size - 1);
     }
 }
 
@@ -234,11 +250,8 @@ fn main() {
             }
             // find range sum query [l, r] 1 indexed
             _ => {
-                // println!("{}", tree.tree[0]);
                 println!("{}", tree.find_range_sum(query[1] - 1, query[2] - 1));
             }
         }
-
-        println!("{:?}", tree.tree);
     }
 }
