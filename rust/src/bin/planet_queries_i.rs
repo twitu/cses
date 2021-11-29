@@ -1,9 +1,7 @@
 use std::{
-    cell::RefCell,
     cmp::min,
     collections::HashSet,
     io::{stdin, Read},
-    rc::Rc,
 };
 
 #[derive(Debug)]
@@ -13,7 +11,7 @@ struct FunctionalGraph {
     next_node: Vec<usize>,
     // inverted view of functional graph is a tree with multiple
     // root nodes
-    tree_view: Rc<Vec<Vec<usize>>>,
+    tree_view: Vec<Vec<usize>>,
     // the root to which a node belongs
     root_id: Vec<usize>,
     // root is a cycle containing possibly many nodes
@@ -27,7 +25,7 @@ struct FunctionalGraph {
     // links to the root position and is only relevant for
     // non root-cycle nodes it should be usize::MAX otherwise
     root_link: Vec<usize>,
-    root_members: Rc<RefCell<Vec<HashSet<usize>>>>,
+    root_members: Vec<HashSet<usize>>,
     // find and store 1st, 2nd, 4th ... ancestors and so on
     // usize::MAX indicates no ancestor
     ancestors: Vec<Vec<usize>>,
@@ -42,7 +40,7 @@ impl FunctionalGraph {
         let root_id = vec![usize::MAX; size];
         let root_pos = vec![usize::MAX; size];
         let root_link = vec![usize::MAX; size];
-        let root_members = Rc::new(RefCell::new(vec![]));
+        let root_members = vec![];
         let rev_root_pos = vec![];
 
         let ancestor_limit: usize = f64::ceil(f64::log2(size as f64)).round() as usize;
@@ -53,8 +51,6 @@ impl FunctionalGraph {
         for (from, &to) in next_node.iter().enumerate() {
             tree_view[to].push(from);
         }
-
-        let tree_view = Rc::new(tree_view);
 
         let mut graph = FunctionalGraph {
             size,
@@ -125,8 +121,7 @@ impl FunctionalGraph {
                         self.root_link[other_node] = loop_start;
                     }
 
-                    let mut root_members = self.root_members.borrow_mut();
-                    root_members.push(loop_visit);
+                    self.root_members.push(loop_visit);
                     root_id += 1;
                 }
                 // found an already visited node
@@ -156,7 +151,7 @@ impl FunctionalGraph {
     fn ancestor_analysis(graph: &mut FunctionalGraph) {
         let root_cycles = graph.root_members.clone();
 
-        for root_cycle in root_cycles.as_ref().borrow().iter() {
+        for root_cycle in root_cycles.iter() {
             for &root_node in root_cycle {
                 FunctionalGraph::traverse_and_mark(root_node, usize::MAX, graph);
             }
@@ -229,7 +224,7 @@ impl FunctionalGraph {
             }
             // reached a root node
             else {
-                let cycle_size = self.root_members.as_ref().borrow()[self.root_id[curr_node]].len();
+                let cycle_size = self.root_members[self.root_id[curr_node]].len();
                 let offset = (self.root_pos[curr_node] + hops) % cycle_size;
 
                 curr_node = self.rev_root_pos[self.root_id[curr_node]][offset];
