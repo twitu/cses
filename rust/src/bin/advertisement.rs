@@ -96,7 +96,8 @@ fn main() {
             // remove duplicate fence from total area
             left_area + right_area - fence
         })
-        .max().unwrap();
+        .max()
+        .unwrap();
 
     println!("{}", max_area);
 }

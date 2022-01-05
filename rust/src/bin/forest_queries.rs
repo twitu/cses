@@ -46,8 +46,8 @@ fn main() {
         let x2 = line[2];
         let y2 = line[3];
 
-        let trees =
-            tree_table[x2][y2] - tree_table[x2][y1 - 1] - tree_table[x1 - 1][y2] + tree_table[x1 - 1][y1 - 1];
+        let trees = tree_table[x2][y2] - tree_table[x2][y1 - 1] - tree_table[x1 - 1][y2]
+            + tree_table[x1 - 1][y1 - 1];
 
         println!("{}", trees);
     }
