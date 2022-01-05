@@ -8,10 +8,16 @@ common common-options
                     , containers
                     , bytestring
   hs-source-dirs:   src
-  ghc-options:      -O2 -Wall -main-is Main
+  -- ghc-options:      -O2 -Wall -main-is Main
 
 -- multi executable cabal project configuration
 -- reference - https://stackoverflow.com/a/14241228
+executable CountingTowers
+  import:           common-options
+  main-is:          CountingTowers.hs
+  ghc-options: -O2 -Wall -main-is CountingTowers
+
 executable DistinctNumbers
   import:           common-options
   main-is:          DistinctNumbers.hs
+  ghc-options: -O2 -Wall -main-is DistinctNumbers
