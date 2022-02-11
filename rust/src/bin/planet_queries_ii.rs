@@ -1,9 +1,7 @@
 use std::{
-    cell::RefCell,
     cmp::min,
     collections::HashSet,
     io::{stdin, Read},
-    rc::Rc,
 };
 
 #[derive(Debug)]
@@ -13,7 +11,7 @@ struct FunctionalGraph {
     next_node: Vec<usize>,
     // inverted view of functional graph is a tree with multiple
     // root nodes
-    tree_view: Rc<Vec<Vec<usize>>>,
+    tree_view: Vec<Vec<usize>>,
     // the root to which a node belongs
     root_id: Vec<usize>,
     // root is a cycle containing possibly many nodes
@@ -25,7 +23,7 @@ struct FunctionalGraph {
     // links to the root position and is only relevant for
     // non root-cycle nodes it should be usize::MAX otherwise
     root_link: Vec<usize>,
-    root_members: Rc<RefCell<Vec<HashSet<usize>>>>,
+    root_members: Vec<HashSet<usize>>,
     // position at start of euler traversal
     traverse_start: Vec<usize>,
     // position at end of euler traversal
@@ -42,7 +40,7 @@ impl FunctionalGraph {
         let root_id = vec![usize::MAX; size];
         let root_pos = vec![usize::MAX; size];
         let root_link = vec![usize::MAX; size];
-        let root_members = Rc::new(RefCell::new(vec![]));
+        let root_members = vec![];
         let traverse_start = vec![usize::MAX; size];
         let traverse_end = vec![usize::MAX; size];
         let depth = vec![usize::MAX; size];
@@ -52,8 +50,6 @@ impl FunctionalGraph {
         for (from, &to) in next_node.iter().enumerate() {
             tree_view[to].push(from);
         }
-
-        let tree_view = Rc::new(tree_view);
 
         let mut graph = FunctionalGraph {
             size,
@@ -118,8 +114,7 @@ impl FunctionalGraph {
                         self.root_link[other_node] = loop_start;
                     }
 
-                    let mut root_members = self.root_members.borrow_mut();
-                    root_members.push(loop_visit);
+                    self.root_members.push(loop_visit);
                     root_id += 1;
                 }
                 // found an already visited node
@@ -148,7 +143,7 @@ impl FunctionalGraph {
         let mut counter = 0;
         let root_cycles = graph.root_members.clone();
 
-        for root_cycle in root_cycles.borrow().iter() {
+        for root_cycle in root_cycles.iter() {
             for &root_node in root_cycle {
                 counter = FunctionalGraph::traverse_and_mark(counter, 0, root_node, graph);
             }
@@ -197,7 +192,7 @@ impl FunctionalGraph {
     // when both nodes are part of same
     // root system and both are root nodes
     fn root_node_dist(self: &FunctionalGraph, a: usize, b: usize) -> usize {
-        let root_cycle_len = self.root_members.borrow()[self.root_id[a]].len();
+        let root_cycle_len = self.root_members[self.root_id[a]].len();
         min(
             self.root_pos[b] - self.root_pos[a],
             self.root_pos[b] - self.root_pos[a] + root_cycle_len,
